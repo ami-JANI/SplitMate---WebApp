@@ -80,6 +80,19 @@ export interface Bill {
   updatedAt: Date;
 }
 
+/** users/{uid}/notifications/{id}: someone added you to a hangout or as a friend. */
+export interface AppNotification {
+  id: string;
+  type: 'addedToHangout' | 'friendAdded';
+  fromID: string;
+  fromName: string;
+  fromAvatar?: string;
+  hangoutID?: string;
+  hangoutTitle?: string;
+  read: boolean;
+  createdAt: Date;
+}
+
 /** publicStats/{uid}: the shareable part of a user's spending summary. */
 export interface PublicStats {
   visible: boolean;

@@ -1,6 +1,6 @@
 // Security-rule tests against the Firestore emulator. Run: npm run test:rules
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { arrayUnion, doc, getDoc, increment, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
+import { arrayUnion, deleteDoc, doc, getDoc, increment, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
@@ -80,6 +80,57 @@ describe('profiles', () => {
     await seed('publicStats/alice', { visible: false, totalSpentCents: 100, hangoutCount: 1 });
     await assertFails(getDoc(doc(as('bob'), 'publicStats/alice')));
     await assertSucceeds(getDoc(doc(as('alice'), 'publicStats/alice')));
+  });
+});
+
+describe('notifications', () => {
+  const note = (o: Record<string, unknown> = {}) => ({ type: 'addedToHangout', fromID: 'bob', fromName: 'Bob', hangoutID: 'h1', hangoutTitle: 'Friday dinner', read: false, createdAt: serverTimestamp(), ...o });
+
+  it('tells someone they were added to a hangout, only together with the add', async () => {
+    await seed('hangouts/h1', hangoutData());
+    const db = as('bob');
+    // Alone (nobody was added): refused.
+    await assertFails(setDoc(doc(db, 'users/carol/notifications/n0'), note()));
+    const b = writeBatch(db);
+    b.update(doc(db, 'hangouts/h1'), { memberIDs: arrayUnion('carol'), 'memberNames.carol': 'Carol' });
+    b.set(doc(db, 'users/carol/notifications/n1'), note());
+    await assertSucceeds(b.commit());
+    // Again, now that Carol is already a member: refused. And never in someone else's name.
+    await assertFails(setDoc(doc(db, 'users/carol/notifications/n2'), note()));
+    await assertFails(setDoc(doc(as('alice'), 'users/carol/notifications/n3'), note()));
+  });
+
+  it('tells someone they were added as a friend, once', async () => {
+    await seed('users/bob', { name: 'Bob', username: 'bob', friendIDs: [], showsExpenses: true });
+    const db = as('bob');
+    const friend = note({ type: 'friendAdded', hangoutID: undefined, hangoutTitle: undefined });
+    delete (friend as Record<string, unknown>).hangoutID;
+    delete (friend as Record<string, unknown>).hangoutTitle;
+    await assertFails(setDoc(doc(db, 'users/carol/notifications/f0'), friend));
+    const b = writeBatch(db);
+    b.update(doc(db, 'users/bob'), { friendIDs: arrayUnion('carol') });
+    b.set(doc(db, 'users/carol/notifications/f1'), friend);
+    await assertSucceeds(b.commit());
+    await assertFails(setDoc(doc(db, 'users/carol/notifications/f2'), friend));
+  });
+
+  it('is private to its owner, who can mark it read or clear it', async () => {
+    await seed('users/carol/notifications/n1', { ...note(), createdAt: Timestamp.now() });
+    await assertFails(getDoc(doc(as('bob'), 'users/carol/notifications/n1')));
+    await assertSucceeds(getDoc(doc(as('carol'), 'users/carol/notifications/n1')));
+    await assertFails(updateDoc(doc(as('carol'), 'users/carol/notifications/n1'), { fromName: 'X' }));
+    await assertSucceeds(updateDoc(doc(as('carol'), 'users/carol/notifications/n1'), { read: true }));
+    await assertFails(deleteDoc(doc(as('bob'), 'users/carol/notifications/n1')));
+    await assertSucceeds(deleteDoc(doc(as('carol'), 'users/carol/notifications/n1')));
+  });
+
+  it('notifies friends added while creating a hangout', async () => {
+    const db = as('alice');
+    const b = writeBatch(db);
+    b.set(doc(db, 'hangouts/h9'), hangoutData({ token: 'ABCDEF' }));
+    b.set(doc(db, 'hangoutTokens/ABCDEF'), { hangoutID: 'h9', creatorID: 'alice', expiresAt: inOneDay() });
+    b.set(doc(db, 'users/bob/notifications/n1'), note({ fromID: 'alice', fromName: 'Alice', hangoutID: 'h9' }));
+    await assertSucceeds(b.commit());
   });
 });
 

@@ -1,5 +1,5 @@
 import { Timestamp, type DocumentData, type DocumentSnapshot, type QueryDocumentSnapshot } from 'firebase/firestore';
-import type { AppUser, Bill, Expense, Hangout, HangoutNotice, PublicStats } from '../lib/types';
+import type { AppNotification, AppUser, Bill, Expense, Hangout, HangoutNotice, PublicStats } from '../lib/types';
 
 type Snap = QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>;
 
@@ -81,6 +81,21 @@ export function toBill(s: Snap): Bill {
     status: d.status === 'inProgress' || d.status === 'delivered' ? d.status : 'due',
     createdAt: date(d.createdAt),
     updatedAt: date(d.updatedAt),
+  };
+}
+
+export function toNotification(s: Snap): AppNotification {
+  const d = s.data() ?? {};
+  return {
+    id: s.id,
+    type: d.type === 'friendAdded' ? 'friendAdded' : 'addedToHangout',
+    fromID: d.fromID ?? '',
+    fromName: d.fromName ?? 'Someone',
+    fromAvatar: d.fromAvatar ?? undefined,
+    hangoutID: d.hangoutID ?? undefined,
+    hangoutTitle: d.hangoutTitle ?? undefined,
+    read: d.read === true,
+    createdAt: date(d.createdAt),
   };
 }
 

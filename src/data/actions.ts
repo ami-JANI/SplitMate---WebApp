@@ -35,11 +35,40 @@ import {
   hangoutDoc,
   hangoutsCol,
   noticesCol,
+  notificationsCol,
   publicStatsDoc,
   tokenDoc,
   userDoc,
   usersCol,
 } from './paths';
+
+// ---------------------------------------------------------------- Notifications
+
+/** The notification a person gets when `from` adds them to a hangout or as a friend. */
+function notificationData(from: AppUser, extra: Record<string, unknown>) {
+  return {
+    fromID: from.id,
+    fromName: from.name,
+    ...(from.avatar ? { fromAvatar: from.avatar } : {}),
+    read: false,
+    createdAt: serverTimestamp(),
+    ...extra,
+  };
+}
+
+export async function markNotificationsRead(uid: string, ids: string[]) {
+  if (!ids.length) return;
+  const batch = writeBatch(db);
+  for (const id of ids.slice(0, 400)) batch.update(doc(notificationsCol(uid), id), { read: true });
+  await batch.commit().catch(() => undefined);
+}
+
+export async function clearNotifications(uid: string, ids: string[]) {
+  if (!ids.length) return;
+  const batch = writeBatch(db);
+  for (const id of ids.slice(0, 400)) batch.delete(doc(notificationsCol(uid), id));
+  await batch.commit().catch(() => undefined);
+}
 
 // ---------------------------------------------------------------- Hangouts
 
@@ -94,6 +123,10 @@ export async function createHangout(input: {
           totalSpentCents: 0,
         });
         tx.set(tokenDoc(token), { hangoutID: ref.id, creatorID: creator.id, expiresAt });
+        for (const id of memberIDs) {
+          if (id === creator.id) continue;
+          tx.set(doc(notificationsCol(id)), notificationData(creator, { type: 'addedToHangout', hangoutID: ref.id, hangoutTitle: title }));
+        }
         return true;
       });
       if (created) return { id: ref.id };
@@ -134,7 +167,7 @@ export async function joinHangout(rawToken: string, me: AppUser, myHangouts: Han
 }
 
 /** A member adds someone to an open hangout. They share costs added from now on, not earlier ones. */
-export async function addMember(hangout: Hangout, user: AppUser): Promise<string | null> {
+export async function addMember(hangout: Hangout, user: AppUser, me: AppUser): Promise<string | null> {
   if (hangout.status !== 'active') return 'This hangout has ended';
   if (hangout.memberIDs.includes(user.id)) return null;
   const changes: Record<string, unknown> = {
@@ -142,8 +175,11 @@ export async function addMember(hangout: Hangout, user: AppUser): Promise<string
     [`memberNames.${user.id}`]: user.name,
   };
   if (user.avatar) changes[`memberAvatars.${user.id}`] = user.avatar;
+  const batch = writeBatch(db);
+  batch.update(hangoutDoc(hangout.id), changes);
+  batch.set(doc(notificationsCol(user.id)), notificationData(me, { type: 'addedToHangout', hangoutID: hangout.id, hangoutTitle: hangout.title }));
   try {
-    await updateDoc(hangoutDoc(hangout.id), changes);
+    await batch.commit();
     return null;
   } catch (e) {
     return friendlyError(e);
@@ -413,8 +449,13 @@ export async function loadUsers(ids: string[]): Promise<AppUser[]> {
   return unique.map((id) => byId.get(id)).filter((u): u is AppUser => Boolean(u));
 }
 
-export async function addFriend(myID: string, friendID: string) {
-  await updateDoc(userDoc(myID), { friendIDs: arrayUnion(friendID) });
+/** Adds a friend and lets them know. */
+export async function addFriend(me: AppUser, friendID: string) {
+  if (me.friendIDs.includes(friendID) || friendID === me.id) return;
+  const batch = writeBatch(db);
+  batch.update(userDoc(me.id), { friendIDs: arrayUnion(friendID) });
+  batch.set(doc(notificationsCol(friendID)), notificationData(me, { type: 'friendAdded' }));
+  await batch.commit();
 }
 
 export async function removeFriend(myID: string, friendID: string) {

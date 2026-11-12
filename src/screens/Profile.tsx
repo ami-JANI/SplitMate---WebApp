@@ -174,7 +174,7 @@ export function MemberProfile() {
   const toggleFriend = async () => {
     try {
       if (isFriend) await removeFriend(me.id, id);
-      else await addFriend(me.id, id);
+      else await addFriend(me, id);
     } catch (e) {
       setError(friendlyError(e));
     }
@@ -267,7 +267,7 @@ export function FindFriends() {
 
   const toggle = async (uid: string, add: boolean) => {
     try {
-      if (add) await addFriend(me.id, uid);
+      if (add) await addFriend(me, uid);
       else await removeFriend(me.id, uid);
     } catch (e) {
       setError(friendlyError(e));

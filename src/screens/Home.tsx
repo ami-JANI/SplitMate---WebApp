@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock, Coffee, Divide, Map as MapIcon, Menu, Plus, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Bell, Clock, Coffee, Divide, Map as MapIcon, Menu, Plus, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,15 +13,17 @@ import { openTotals } from '../lib/stats';
 import { isPaid, type Bill, type Hangout } from '../lib/types';
 import { CreateHangoutSheet } from '../sheets/CreateHangoutSheet';
 import { JoinSheet } from '../sheets/JoinSheet';
+import { NotificationsSheet } from '../sheets/NotificationsSheet';
 import { SideMenu } from './SideMenu';
 
 export function Home() {
   const me = useMe();
-  const { hangouts, bills, error } = useAppData();
+  const { hangouts, bills, notifications, error } = useAppData();
+  const unread = notifications.filter((n) => !n.read).length;
   const { rise, reduce, spring } = useMotion();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
-  const [sheet, setSheet] = useState<'create' | 'join' | null>(null);
+  const [sheet, setSheet] = useState<'create' | 'join' | 'notifications' | null>(null);
 
   const active = hangouts.filter((h) => h.status === 'active');
   const past = hangouts.filter((h) => h.status === 'ended');
@@ -44,6 +46,10 @@ export function Home() {
             <div className="grow t-callout muted w6 ellipsis">
               Hello, <span className="w8" style={{ color: 'var(--ink)' }}>{firstName(me.name)}</span>
             </div>
+            <PressButton className="circle-btn" aria-label={unread ? `Notifications, ${unread} new` : 'Notifications'} onClick={() => setSheet('notifications')} style={{ position: 'relative' }}>
+              <Bell size={22} />
+              {unread > 0 && <span className="badge">{unread > 9 ? '9+' : unread}</span>}
+            </PressButton>
             <Link to="/profile" aria-label="My profile">
               <Avatar avatar={me.avatar} name={me.name} size={48} />
             </Link>
@@ -143,6 +149,7 @@ export function Home() {
 
       <SideMenu open={menu} onClose={() => setMenu(false)} />
       <CreateHangoutSheet open={sheet === 'create'} onClose={() => setSheet(null)} />
+      <NotificationsSheet open={sheet === 'notifications'} onClose={() => setSheet(null)} />
       <JoinSheet open={sheet === 'join'} onClose={() => setSheet(null)} />
     </>
   );

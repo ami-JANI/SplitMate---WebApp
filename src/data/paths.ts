@@ -3,6 +3,7 @@ import { db } from '../firebase';
 
 export const usersCol = () => collection(db, 'users');
 export const userDoc = (uid: string) => doc(db, 'users', uid);
+export const notificationsCol = (uid: string) => collection(db, 'users', uid, 'notifications');
 export const usernameDoc = (handle: string) => doc(db, 'usernames', handle);
 export const publicStatsDoc = (uid: string) => doc(db, 'publicStats', uid);
 export const hangoutsCol = () => collection(db, 'hangouts');

@@ -1,21 +1,22 @@
-import { onSnapshot, query, where } from 'firebase/firestore';
+import { limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Bill, Hangout } from '../lib/types';
+import type { AppNotification, Bill, Hangout } from '../lib/types';
 import { spendingSummary } from '../lib/stats';
 import { loadAllExpenses, postRemindersIfDue, publishStats } from './actions';
 import { useAuth } from './auth';
-import { toBill, toHangout } from './convert';
+import { toBill, toHangout, toNotification } from './convert';
 import { friendlyError } from './errors';
-import { billsCol, hangoutsCol } from './paths';
+import { billsCol, hangoutsCol, notificationsCol } from './paths';
 
 interface AppData {
   hangouts: Hangout[];
   bills: Bill[];
+  notifications: AppNotification[];
   loaded: boolean;
   error: string | null;
 }
 
-const DataContext = createContext<AppData>({ hangouts: [], bills: [], loaded: false, error: null });
+const DataContext = createContext<AppData>({ hangouts: [], bills: [], notifications: [], loaded: false, error: null });
 
 export const useAppData = () => useContext(DataContext);
 
@@ -23,6 +24,7 @@ export const useAppData = () => useContext(DataContext);
 export function DataProvider({ uid, children }: { uid: string; children: ReactNode }) {
   const [hangouts, setHangouts] = useState<Hangout[] | null>(null);
   const [bills, setBills] = useState<Bill[] | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,7 +40,13 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
       (s) => setBills(s.docs.map(toBill).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())),
       onErr,
     );
+    const offN = onSnapshot(
+      query(notificationsCol(uid), orderBy('createdAt', 'desc'), limit(50)),
+      (s) => setNotifications(s.docs.map(toNotification)),
+      () => undefined,
+    );
     return () => {
+      offN();
       offH();
       offB();
     };
@@ -69,8 +77,8 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
   }, [hangouts, bills, profile, uid]);
 
   const value = useMemo(
-    () => ({ hangouts: hangouts ?? [], bills: bills ?? [], loaded: hangouts !== null && bills !== null, error }),
-    [hangouts, bills, error],
+    () => ({ hangouts: hangouts ?? [], bills: bills ?? [], notifications, loaded: hangouts !== null && bills !== null, error }),
+    [hangouts, bills, notifications, error],
   );
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

@@ -45,7 +45,7 @@ export function AddPeopleSheet({ open, onClose, hangout }: { open: boolean; onCl
 
   const add = async (user: AppUser) => {
     setBusy(user.id);
-    setError(await addMember(hangout, user));
+    setError(await addMember(hangout, user, me));
     setBusy(null);
   };
 

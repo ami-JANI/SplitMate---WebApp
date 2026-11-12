@@ -46,6 +46,41 @@ service cloud.firestore {
         && request.resource.data.username == resource.data.username
         && !(uid in request.resource.data.friendIDs);
       allow delete: if false;
+
+      // "X added you to a hangout" / "X added you as a friend". Written by the person who
+      // did it, in the same write as the add itself, so it can't be faked or spammed.
+      match /notifications/{noticeID} {
+        function hangoutPath() {
+          return /databases/$(database)/documents/hangouts/$(request.resource.data.hangoutID);
+        }
+        function senderPath() {
+          return /databases/$(database)/documents/users/$(request.auth.uid);
+        }
+        function addedToHangoutNow() {
+          let d = request.resource.data;
+          return d.type == 'addedToHangout'
+            && d.hangoutID is string
+            && d.hangoutTitle is string && d.hangoutTitle.size() <= 60
+            && getAfter(hangoutPath()).data.memberIDs.hasAll([uid, request.auth.uid])
+            && (!exists(hangoutPath()) || !(uid in get(hangoutPath()).data.memberIDs));
+        }
+        function addedAsFriendNow() {
+          return request.resource.data.type == 'friendAdded'
+            && uid in getAfter(senderPath()).data.friendIDs
+            && !(uid in get(senderPath()).data.friendIDs);
+        }
+
+        allow read, delete: if isSelf(uid);
+        allow update: if isSelf(uid) && changed().hasOnly(['read']) && request.resource.data.read == true;
+        allow create: if signedIn()
+          && uid != request.auth.uid
+          && request.resource.data.keys().hasOnly(['type', 'fromID', 'fromName', 'fromAvatar', 'hangoutID', 'hangoutTitle', 'read', 'createdAt'])
+          && request.resource.data.fromID == request.auth.uid
+          && request.resource.data.fromName is string && request.resource.data.fromName.size() <= 50
+          && request.resource.data.read == false
+          && request.resource.data.createdAt == request.time
+          && (addedToHangoutNow() || addedAsFriendNow());
+      }
     }
 
     // One document per taken username. Readable before sign-up to check availability.
