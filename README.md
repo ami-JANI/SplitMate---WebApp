@@ -34,11 +34,10 @@ You need Node 20 or newer, and Java for the Firebase emulators.
 
 ```bash
 npm install
-cp .env.example .env.local      # then fill in the web config (see below)
-npm run dev                     # http://localhost:5173
+npm run dev                     # http://localhost:5173 (uses the real project, config in .env)
 ```
 
-**Without touching the real project:** set `VITE_USE_EMULATORS=true` in `.env.local`, then run `npm run emulators` in one terminal and `npm run dev` in another. The data is local and disappears when you stop the emulators.
+**Without touching the real project:** create `.env.local` with `VITE_USE_EMULATORS=true`, then run `npm run emulators` in one terminal and `npm run dev` in another. The data is local and disappears when you stop the emulators.
 
 To open it on your phone on the same Wi-Fi, run `npm run dev -- --host` and open the "Network" address it prints.
 
@@ -53,7 +52,7 @@ npm run typecheck
 ## Firebase setup (one time)
 
 1. In the [Firebase console](https://console.firebase.google.com/project/splitmate-web-76056), enable **Authentication → Email/Password** and create the **Firestore Database**.
-2. Under **Project settings → Your apps → Web app**, copy the config values into `.env.local`.
+2. The web app config is already in `.env`.
 3. Install the CLI and sign in: `npm install -g firebase-tools` and `firebase login`.
 4. Deploy the rules and the app:
 

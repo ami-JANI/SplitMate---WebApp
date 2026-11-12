@@ -2,8 +2,8 @@ node_modules
 dist
 dev-dist
 *.local
-.env
-.env.*
+# .env holds the public Firebase web config and is committed
+.env.*.local
 !.env.example
 .firebase
 *-debug.log
