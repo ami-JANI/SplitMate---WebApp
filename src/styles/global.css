@@ -148,6 +148,12 @@ h1, h2, h3, p { margin: 0; }
 .pill-field svg { color: var(--purple); flex: none; }
 .pill-field input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: var(--t-body); padding: 14px 0; }
 .pill-field input::placeholder { color: #A39CA8; }
+.eye-btn {
+  flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin-right: -12px;
+  border: 0; background: transparent; border-radius: 999px; cursor: pointer; color: var(--purple);
+}
+.eye-btn:focus-visible { outline: 2px solid var(--lavender); }
+.pill-field input::-ms-reveal { display: none; }
 .form-group { background: var(--paper); border-radius: var(--r-card); overflow: hidden; box-shadow: var(--soft-shadow); }
 .form-group > * + * { border-top: 1px solid rgba(43, 38, 51, 0.07); }
 .form-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 16px; }

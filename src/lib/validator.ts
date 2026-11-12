@@ -4,9 +4,38 @@
 export const MIN_PASSWORD = 6;
 export const MAX_TOUR_DAYS = 30;
 
-export function signInProblem(email: string, password: string): string | null {
+/**
+ * A practical email check: one "@", no spaces, a dot in the domain, a 2+ letter
+ * ending, and no empty or doubled dots. Firebase still has the final say.
+ */
+export function isEmail(raw: string): boolean {
+  const email = raw.trim();
+  if (email.length > 254) return false;
+  const m = /^([^\s@]+)@([^\s@]+)$/.exec(email);
+  if (!m) return false;
+  const [, local, domain] = m;
+  if (local.length > 64 || local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false;
+  const labels = domain.split('.');
+  if (labels.length < 2) return false;
+  if (!labels.every((l) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(l))) return false;
+  return /^[a-z]{2,}$/i.test(labels[labels.length - 1]);
+}
+
+/** True when the sign-in text should be treated as an email rather than a username. */
+export const looksLikeEmail = (raw: string) => {
+  const id = raw.trim();
+  return id.includes('@') && !id.startsWith('@');
+};
+
+export function emailProblem(email: string): string | null {
   if (!email.trim()) return 'Email is missing';
-  if (!email.includes('@')) return "That email doesn't look right";
+  if (!isEmail(email)) return "That email doesn't look right";
+  return null;
+}
+
+export function signInProblem(email: string, password: string): string | null {
+  const e = emailProblem(email);
+  if (e) return e;
   if (!password) return 'Password is missing';
   return null;
 }
@@ -15,9 +44,10 @@ export function signInProblem(email: string, password: string): string | null {
 export function identifierProblem(identifier: string, password: string): string | null {
   const id = identifier.trim();
   if (!id) return 'Email or username is missing';
-  if (!id.includes('@') || id.startsWith('@')) {
-    const u = usernameProblem(cleanUsername(id));
-    if (u) return "That username doesn't look right";
+  if (looksLikeEmail(id)) {
+    if (!isEmail(id)) return "That email doesn't look right";
+  } else if (usernameProblem(cleanUsername(id))) {
+    return "That username doesn't look right";
   }
   if (!password) return 'Password is missing';
   return null;

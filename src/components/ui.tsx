@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeftRight, BadgeCheck, ChevronLeft, Clock } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, BadgeCheck, ChevronLeft, Clock, Eye, EyeOff, Lock } from 'lucide-react';
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +53,28 @@ export function PillField({ icon, ...rest }: ComponentProps<'input'> & { icon: R
     <label className="pill-field">
       {icon}
       <input {...rest} />
+    </label>
+  );
+}
+
+/** A password pill with an eye button that shows or hides what was typed. */
+export function PasswordField(props: Omit<ComponentProps<'input'>, 'type'>) {
+  const [shown, setShown] = useState(false);
+  return (
+    <label className="pill-field">
+      <Lock size={20} />
+      <input {...props} type={shown ? 'text' : 'password'} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+      <button
+        type="button"
+        className="eye-btn"
+        aria-label={shown ? 'Hide password' : 'Show password'}
+        aria-pressed={shown}
+        // Keep the keyboard up and the cursor in the field on phones.
+        onPointerDown={(e) => e.preventDefault()}
+        onClick={() => setShown((v) => !v)}
+      >
+        {shown ? <EyeOff size={20} /> : <Eye size={20} />}
+      </button>
     </label>
   );
 }

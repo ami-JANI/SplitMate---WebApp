@@ -1,9 +1,11 @@
 import {
+  confirmPasswordReset,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as fbSignOut,
+  verifyPasswordResetCode,
   type User,
 } from 'firebase/auth';
 import { getDoc, onSnapshot, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
@@ -11,7 +13,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { auth, db } from '../firebase';
 import type { AppUser } from '../lib/types';
 import { loginKey } from '../lib/loginKey';
-import { cleanUsername, identifierProblem, signUpProblem } from '../lib/validator';
+import { cleanUsername, emailProblem, identifierProblem, looksLikeEmail, MIN_PASSWORD, signUpProblem } from '../lib/validator';
 import { toUser } from './convert';
 import { friendlyError } from './errors';
 import { loginDoc, publicStatsDoc, userDoc, usernameDoc } from './paths';
@@ -25,7 +27,12 @@ interface AuthState {
   signIn(identifier: string, password: string): Promise<string | null>;
   signUp(input: { name: string; username: string; email: string; password: string; avatar?: string }): Promise<string | null>;
   completeProfile(input: { name: string; username: string; avatar?: string }): Promise<string | null>;
+  /** Emails a reset link. */
   resetPassword(email: string): Promise<string | null>;
+  /** The email a reset link is for, or a problem if the link is used up or expired. */
+  checkResetLink(code: string): Promise<{ email: string } | { problem: string }>;
+  /** Sets the new password from a reset link, then signs in with it. */
+  finishReset(code: string, email: string, newPassword: string): Promise<string | null>;
   signOut(): Promise<void>;
 }
 
@@ -75,6 +82,13 @@ async function rememberLogin(user: User, handle: string, password: string) {
 
 const WRONG_USERNAME = 'Wrong username or password. If this keeps failing, sign in with your email once.';
 
+const LINK_PROBLEM = 'This reset link has expired or was already used. Ask for a new one.';
+
+function resetLinkProblem(e: unknown): string {
+  const code = (e as { code?: string })?.code ?? '';
+  return code === 'auth/expired-action-code' || code === 'auth/invalid-action-code' ? LINK_PROBLEM : friendlyError(e);
+}
+
 async function usernameTaken(handle: string) {
   return (await getDoc(usernameDoc(handle))).exists();
 }
@@ -107,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (problem) return problem;
         const id = identifier.trim();
         try {
-          if (id.includes('@') && !id.startsWith('@')) {
+          if (looksLikeEmail(id)) {
             // Email: sign in, then make username sign-in work for next time.
             const cred = await signInWithEmailAndPassword(auth, id, password);
             void getDoc(userDoc(cred.user.uid))
@@ -152,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async completeProfile({ name, username, avatar }) {
         const handle = cleanUsername(username);
-        const problem = signUpProblem(name, handle, 'x@x', 'xxxxxx');
+        const problem = signUpProblem(name, handle, 'x@x.co', 'xxxxxx');
         if (problem) return problem;
         if (!auth.currentUser) return 'You are signed out';
         try {
@@ -164,14 +178,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       async resetPassword(email) {
-        if (!email.trim()) return 'Type your email first';
-        if (!email.includes('@') || email.trim().startsWith('@')) return 'Type your email (not your username) to reset your password';
+        const problem = emailProblem(email);
+        if (problem) return problem;
+        const address = email.trim();
         try {
-          await sendPasswordResetEmail(auth, email.trim());
+          // The "Continue" button on Firebase's reset page brings people back to the app.
+          await sendPasswordResetEmail(auth, address, { url: `${window.location.origin}/` });
           return null;
         } catch (e) {
+          const code = (e as { code?: string })?.code ?? '';
+          if (code === 'auth/unauthorized-continue-uri' || code === 'auth/invalid-continue-uri') {
+            // Opened from a domain Firebase doesn't know: send the plain link instead.
+            try {
+              await sendPasswordResetEmail(auth, address);
+              return null;
+            } catch (e2) {
+              return friendlyError(e2);
+            }
+          }
+          // Firebase hides whether an address has an account; so do we.
+          if (code === 'auth/user-not-found') return null;
           return friendlyError(e);
         }
+      },
+      async checkResetLink(code) {
+        try {
+          return { email: await verifyPasswordResetCode(auth, code) };
+        } catch (e) {
+          return { problem: resetLinkProblem(e) };
+        }
+      },
+      async finishReset(code, email, newPassword) {
+        if (newPassword.length < MIN_PASSWORD) return `Password needs at least ${MIN_PASSWORD} characters`;
+        try {
+          await confirmPasswordReset(auth, code, newPassword);
+        } catch (e) {
+          return resetLinkProblem(e);
+        }
+        try {
+          // Sign straight in, and file the new password so username sign-in keeps working.
+          const cred = await signInWithEmailAndPassword(auth, email, newPassword);
+          const snap = await getDoc(userDoc(cred.user.uid)).catch(() => null);
+          await rememberLogin(cred.user, snap?.data()?.username ?? '', newPassword);
+        } catch {
+          /* the password is changed; they can sign in by hand */
+        }
+        return null;
       },
       async signOut() {
         await fbSignOut(auth);

@@ -81,7 +81,10 @@ The handoff (§11) suggested these improvements, and the web build includes them
 - Each hangout stores its creator's time zone, and every member works out the day in that zone.
 - Join tokens are checked for collisions and retried.
 - Profiles hold no email, so searching them doesn't expose anyone's address.
-- You can sign in with your username or your email. The email for a username is filed under a key made from the username and the password (`src/lib/loginKey.ts`), so only someone who knows both can find it. After a password reset, sign in with your email once to make the username work again.
+- You can sign in with your username or your email. The email for a username is filed under a key made from the username and the password (`src/lib/loginKey.ts`), so only someone who knows both can find it.
+- "Forgot password?" emails a Firebase reset link. Usernames never reveal an email, so the reset asks for the email itself.
+  - By default the link opens Firebase's own reset page, and afterwards you sign in with your email once to make your username work again.
+  - Optional: in the Firebase console, go to **Authentication → Templates → Password reset → Edit (pencil) → Customize action URL** and set it to `https://splitmate-web-76056.web.app/auth/action`. The link then opens the app's own reset screen, which signs you in and keeps username sign-in working.
 - Tighter security rules:
   - members can only change the fields the app needs
   - only the creator can end a hangout

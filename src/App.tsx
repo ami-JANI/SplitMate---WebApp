@@ -5,7 +5,7 @@ import { DataProvider } from './data/appData';
 import { AuthProvider, useAuth } from './data/auth';
 import { isConfigured } from './firebase';
 import { useMotion } from './lib/motion';
-import { SignIn, SignUp } from './screens/Auth';
+import { ResetPassword, SignIn, SignUp } from './screens/Auth';
 import { HangoutScreen } from './screens/HangoutScreen';
 import { Home } from './screens/Home';
 import { FindFriends, MemberProfile, MyProfile } from './screens/Profile';
@@ -27,6 +27,9 @@ export default function App() {
 /** Signed out → sign in / sign up. Signed in without a profile → finish setup. Otherwise the app. */
 function Gate() {
   const { user, profile } = useAuth();
+  const { pathname } = useLocation();
+  // The reset link from the email works whether or not someone is signed in here.
+  if (pathname === '/auth/action') return <Page><ResetPassword /></Page>;
   if (user === undefined || (user && profile === undefined)) return <div className="loading-screen" aria-label="Loading"><span className="spinner" style={{ color: 'var(--purple)', borderColor: 'var(--lavender)', borderTopColor: 'var(--purple)', width: 34, height: 34 }} /></div>;
   if (!user) {
     return (
