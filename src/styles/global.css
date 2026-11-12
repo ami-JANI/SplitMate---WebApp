@@ -90,7 +90,7 @@ h1, h2, h3, p { margin: 0; }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------------------------------------------------------------- Type */
-.two-tone { font-family: var(--f-head); text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.02; overflow-wrap: anywhere; }
+.two-tone { font-family: var(--f-head); text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.02; overflow-wrap: break-word; }
 .two-tone .light { font-weight: 300; }
 .two-tone .bold { font-weight: 700; }
 .section-title { font-size: 1.4rem; }
@@ -240,9 +240,9 @@ h1, h2, h3, p { margin: 0; }
 .menu-panel { position: fixed; top: 0; bottom: 0; left: 0; z-index: 31; width: min(320px, 86vw); background: var(--cream); overflow-y: auto; padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 24px); display: flex; flex-direction: column; gap: 16px; box-shadow: 8px 0 40px rgba(43,38,51,0.18); touch-action: pan-y; }
 .menu-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 30; }
 .menu-panel > * { flex-shrink: 0; }
-.tile { border-radius: var(--r-card); padding: 14px; display: flex; flex-direction: column; gap: 6px; min-height: 100px; }
-.tile .tile-value { font-family: var(--f-num); font-size: 1.5rem; line-height: 1.1; overflow-wrap: anywhere; }
-.tile .tile-word { font-family: var(--f-head); font-weight: 700; font-size: 1.25rem; text-transform: uppercase; line-height: 1.05; overflow-wrap: anywhere; }
+.tile { border-radius: var(--r-card); padding: 14px; min-width: 0; display: flex; flex-direction: column; gap: 6px; min-height: 100px; }
+.tile .tile-value { font-family: var(--f-num); font-size: clamp(1.05rem, 5.6vw, 1.5rem); line-height: 1.1; overflow-wrap: anywhere; }
+.tile .tile-word { font-family: var(--f-head); font-weight: 700; font-size: clamp(0.9rem, 4.8vw, 1.25rem); text-transform: uppercase; line-height: 1.05; overflow-wrap: break-word; }
 .tile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* ---------------------------------------------------------------- Misc */

@@ -61,7 +61,7 @@ export function Home() {
               <span className="blob" style={{ width: 220, height: 220, right: -70, top: -80, background: 'rgba(255,255,255,0.08)' }} />
               <span className="blob" style={{ width: 150, height: 150, right: -20, bottom: -40, background: 'rgba(255,194,51,0.25)' }} />
               <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
-                <TwoToneTitle as="span" light="Create a" bold="Hangout" size="var(--t-large)" className="grow" />
+                <TwoToneTitle as="span" light="Create a" bold="Hangout" size="clamp(1.6rem, 8.6vw, 2.125rem)" className="grow" />
                 <span className="circle-btn white" style={{ width: 56, height: 56 }}>
                   <ArrowUpRight size={26} strokeWidth={2.5} />
                 </span>
