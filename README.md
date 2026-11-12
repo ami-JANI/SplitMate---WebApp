@@ -7,7 +7,7 @@ It is a web rebuild of the SwiftUI iOS app, with its own Firebase project (`spli
 ## How it works
 
 1. Create a **hangout** (one day) or a **tour** (2 to 30 days) and share its 6-character **join token**. You can also share a link, `/join/TOKEN`.
-2. Friends join, and anyone adds **costs**: what it was, how much, who paid, and who shares it.
+2. Friends join with the token, or any member adds them from the hangout screen by username or from their friends list. Anyone adds **costs**: what it was, how much, who paid, and who shares it.
 3. A **live split** shows every balance and the fewest payments that settle them, with your own payments first.
 4. When the creator **ends** it (or, for a tour, when **each day ends**), those payments become **bills**. Each bill moves **Due → In progress → Delivered**.
 5. Anyone who still owes gets a reminder in the hangout every 2 hours.

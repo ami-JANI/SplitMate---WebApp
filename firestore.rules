@@ -6,6 +6,7 @@ rules_version = '2';
 // Changes from the iOS app's rules (docs/HANDOFF.md §8 "gaps worth fixing"):
 // - Emails are never stored in Firestore (they stay in Firebase Auth), so profiles are safe to search.
 // - Members can only change the hangout fields the app needs, and only in the allowed direction.
+//   They can add people to an open hangout, but never remove or rename anyone else.
 // - Bills can only be created in the same write that settles their day (or ends the hangout),
 //   between members of that hangout.
 // - Costs must be paid by and split between members, and keep totalSpentCents in step.
@@ -113,6 +114,24 @@ service cloud.firestore {
           && request.resource.data.get('memberAvatars', {}).diff(resource.data.get('memberAvatars', {})).affectedKeys().hasOnly([request.auth.uid]);
       }
 
+      // A member may add other people while the hangout is open: members only grow,
+      // and names and avatars may only be set for the people being added.
+      function isAddingPeople() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let added = after.memberIDs.toSet().difference(before.memberIDs.toSet());
+        return isMember()
+          && before.status == 'active'
+          && changed().hasOnly(['memberIDs', 'memberNames', 'memberAvatars'])
+          && after.memberIDs.hasAll(before.memberIDs)
+          && after.memberIDs.size() == before.memberIDs.size() + added.size()
+          && added.size() >= 1 && added.size() <= 20
+          && after.memberIDs.size() <= 100
+          && added.hasAll(after.memberNames.diff(before.memberNames).affectedKeys())
+          && after.memberNames.keys().toSet().hasAll(added)
+          && added.hasAll(after.get('memberAvatars', {}).diff(before.get('memberAvatars', {})).affectedKeys());
+      }
+
       // What a member may change, and how.
       function isMemberUpdate() {
         let before = resource.data;
@@ -147,7 +166,7 @@ service cloud.firestore {
 
       allow read: if isMember();
       allow create: if signedIn() && validNew();
-      allow update: if isMemberUpdate() || isJoining();
+      allow update: if isMemberUpdate() || isJoining() || isAddingPeople();
       allow delete: if false;
 
       // Costs can't be added to an ended hangout or a settled tour day, and never edited.

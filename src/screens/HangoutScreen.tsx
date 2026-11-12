@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCircle2, Clock, Coffee, Copy, Crown, Flag, Map as MapIcon, Plus, Share2, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCircle2, Clock, Coffee, Copy, Crown, Flag, Map as MapIcon, Plus, Share2, Trash2, UserPlus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -16,6 +16,7 @@ import { useMotion } from '../lib/motion';
 import { shareOf } from '../lib/settlement';
 import { memberAvatar, memberName, type Expense, type Hangout } from '../lib/types';
 import { AddCostSheet } from '../sheets/AddCostSheet';
+import { AddPeopleSheet } from '../sheets/AddPeopleSheet';
 
 const validFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
 const timeFmt = new Intl.DateTimeFormat('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -29,6 +30,7 @@ export function HangoutScreen() {
   const { expenses, expensesLoaded, notices, error, setError } = useHangoutDetail(id);
   const { reduce, spring } = useMotion();
   const [adding, setAdding] = useState(false);
+  const [addingPeople, setAddingPeople] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [ending, setEnding] = useState(false);
 
@@ -100,6 +102,14 @@ export function HangoutScreen() {
               <span className="t-cap w7 ellipsis" style={{ maxWidth: 62 }}>{uid === me.id ? 'You' : memberName(hangout, uid).split(' ')[0]}</span>
             </button>
           ))}
+          {active && (
+            <button role="listitem" onClick={() => setAddingPeople(true)} aria-label="Add people">
+              <span style={{ width: 54, height: 54, borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px dashed var(--purple)', color: 'var(--purple)', background: 'var(--paper)' }}>
+                <UserPlus size={22} />
+              </span>
+              <span className="t-cap w8" style={{ color: 'var(--purple)' }}>Add</span>
+            </button>
+          )}
         </div>
 
         <ErrorBanner message={error} />
@@ -159,6 +169,7 @@ export function HangoutScreen() {
         )}
       </main>
 
+      <AddPeopleSheet open={addingPeople} onClose={() => setAddingPeople(false)} hangout={hangout} />
       <AddCostSheet open={adding} onClose={() => setAdding(false)} hangout={hangout} me={me.id} />
       <Confirm
         open={confirmEnd}

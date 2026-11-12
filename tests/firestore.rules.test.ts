@@ -105,6 +105,24 @@ describe('hangouts', () => {
     await assertFails(updateDoc(doc(as('carol'), 'hangouts/h1'), { memberIDs: arrayUnion('carol'), 'memberNames.alice': 'X' }));
   });
 
+  it('lets a member add people to an open hangout, and nothing else', async () => {
+    await seed('hangouts/h1', hangoutData());
+    await assertSucceeds(
+      updateDoc(doc(as('bob'), 'hangouts/h1'), { memberIDs: arrayUnion('carol', 'dave'), 'memberNames.carol': 'Carol', 'memberNames.dave': 'Dave', 'memberAvatars.carol': 'nova' }),
+    );
+    // Not by outsiders, not while renaming an existing member, not by replacing the list, not without a name.
+    await assertFails(updateDoc(doc(as('erin'), 'hangouts/h1'), { memberIDs: arrayUnion('frank'), 'memberNames.frank': 'Frank' }));
+    await assertFails(updateDoc(doc(as('bob'), 'hangouts/h1'), { memberIDs: arrayUnion('erin'), 'memberNames.erin': 'Erin', 'memberNames.alice': 'X' }));
+    await assertFails(updateDoc(doc(as('bob'), 'hangouts/h1'), { memberIDs: ['bob', 'erin'], 'memberNames.erin': 'Erin' }));
+    await assertFails(updateDoc(doc(as('bob'), 'hangouts/h1'), { memberIDs: arrayUnion('erin') }));
+    await assertFails(updateDoc(doc(as('bob'), 'hangouts/h1'), { memberIDs: arrayUnion('erin'), 'memberNames.erin': 'Erin', title: 'Hacked' }));
+  });
+
+  it('refuses adding people after the end', async () => {
+    await seed('hangouts/h1', hangoutData({ status: 'ended' }));
+    await assertFails(updateDoc(doc(as('bob'), 'hangouts/h1'), { memberIDs: arrayUnion('carol'), 'memberNames.carol': 'Carol' }));
+  });
+
   it('only lets the creator end a hangout', async () => {
     await seed('hangouts/h1', hangoutData());
     await assertFails(updateDoc(doc(as('bob'), 'hangouts/h1'), { status: 'ended', endedAt: serverTimestamp() }));

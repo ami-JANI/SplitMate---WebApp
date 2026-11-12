@@ -133,6 +133,23 @@ export async function joinHangout(rawToken: string, me: AppUser, myHangouts: Han
   }
 }
 
+/** A member adds someone to an open hangout. They share costs added from now on, not earlier ones. */
+export async function addMember(hangout: Hangout, user: AppUser): Promise<string | null> {
+  if (hangout.status !== 'active') return 'This hangout has ended';
+  if (hangout.memberIDs.includes(user.id)) return null;
+  const changes: Record<string, unknown> = {
+    memberIDs: arrayUnion(user.id),
+    [`memberNames.${user.id}`]: user.name,
+  };
+  if (user.avatar) changes[`memberAvatars.${user.id}`] = user.avatar;
+  try {
+    await updateDoc(hangoutDoc(hangout.id), changes);
+    return null;
+  } catch (e) {
+    return friendlyError(e);
+  }
+}
+
 // ---------------------------------------------------------------- Costs
 
 export async function addExpense(
