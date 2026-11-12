@@ -1,0 +1,14 @@
+node_modules
+dist
+dev-dist
+*.local
+.env
+.env.*
+!.env.example
+.firebase
+*-debug.log
+firebase-debug.*.log
+functions/lib
+functions/node_modules
+# Handoff package kept next to the app on the local machine
+handoff/

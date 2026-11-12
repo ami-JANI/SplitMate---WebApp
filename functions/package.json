@@ -1,0 +1,19 @@
+{
+  "name": "splitmate-functions",
+  "private": true,
+  "description": "Scheduled jobs for SplitMate: settle finished tour days and post payment reminders. Needs the Blaze plan.",
+  "main": "lib/index.js",
+  "engines": { "node": "22" },
+  "scripts": {
+    "copy-shared": "node -e \"const fs=require('fs');fs.mkdirSync('src/shared',{recursive:true});for(const f of ['settlement.ts','dayKey.ts'])fs.copyFileSync('../src/lib/'+f,'src/shared/'+f)\"",
+    "build": "npm run copy-shared && tsc",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "firebase-functions": "^6.4.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

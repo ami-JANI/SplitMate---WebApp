@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Zara</title>
+  <clipPath id="c-zara"><circle cx="50" cy="50" r="50"/></clipPath>
+  <g clip-path="url(#c-zara)">
+  <rect width="100" height="100" fill="#73876B"/>
+  <ellipse cx="50" cy="48" rx="31" ry="36" fill="#299994"/>
+  <ellipse cx="50" cy="100" rx="34" ry="20" fill="#299994"/>
+  <rect x="43" y="62" width="14" height="18" rx="5" fill="#DEA878"/>
+  <ellipse cx="50" cy="48" rx="23" ry="26" fill="#DEA878"/>
+  <ellipse cx="50" cy="24" rx="24" ry="9" fill="#299994"/>
+  <ellipse cx="50" cy="94" rx="30" ry="16" fill="#299994"/>
+  <ellipse cx="41" cy="49" rx="2.6" ry="2.6" fill="#2B2633"/>
+  <ellipse cx="59" cy="49" rx="2.6" ry="2.6" fill="#2B2633"/>
+  <ellipse cx="36" cy="57" rx="3.5" ry="3.5" fill="#FF2D55" fill-opacity="0.3"/>
+  <ellipse cx="64" cy="57" rx="3.5" ry="3.5" fill="#FF2D55" fill-opacity="0.3"/>
+  <path d="M42 58 Q50 67 58 58" fill="none" stroke="#2B2633" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+</svg>

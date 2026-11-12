@@ -1,0 +1,38 @@
+{
+  "name": "splitmate-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SplitMate: hang out, split fair, settle up. Installable web app for Android, iOS and desktop.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-splitmate \"vitest run --config vitest.rules.config.ts\"",
+    "emulators": "firebase emulators:start --project demo-splitmate",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore",
+    "deploy:functions": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase": "^12.4.0",
+    "lucide-react": "^0.548.0",
+    "motion": "^12.23.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "firebase-tools": "^14.20.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.0",
+    "vite-plugin-pwa": "^1.1.0",
+    "vitest": "^3.2.0"
+  }
+}

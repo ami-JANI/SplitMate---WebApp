@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Sky</title>
+  <clipPath id="c-sky"><circle cx="50" cy="50" r="50"/></clipPath>
+  <g clip-path="url(#c-sky)">
+  <rect width="100" height="100" fill="#DBCCF2"/>
+  <rect x="22" y="22" width="56" height="46" rx="22" fill="#4CA8E6"/>
+  <ellipse cx="50" cy="100" rx="34" ry="20" fill="#2B2633"/>
+  <rect x="43" y="62" width="14" height="18" rx="5" fill="#FFDBBD"/>
+  <ellipse cx="27" cy="50" rx="5" ry="5" fill="#FFDBBD"/>
+  <ellipse cx="73" cy="50" rx="5" ry="5" fill="#FFDBBD"/>
+  <ellipse cx="50" cy="48" rx="23" ry="26" fill="#FFDBBD"/>
+  <ellipse cx="50" cy="27" rx="26" ry="13" fill="#4CA8E6"/>
+  <rect x="28" y="28" width="44" height="9" rx="4" fill="#4CA8E6"/>
+  <ellipse cx="41" cy="49" rx="2.6" ry="2.6" fill="#2B2633"/>
+  <ellipse cx="59" cy="49" rx="2.6" ry="2.6" fill="#2B2633"/>
+  <ellipse cx="36" cy="57" rx="3.5" ry="3.5" fill="#FF2D55" fill-opacity="0.3"/>
+  <ellipse cx="64" cy="57" rx="3.5" ry="3.5" fill="#FF2D55" fill-opacity="0.3"/>
+  <path d="M42 58 Q50 67 58 58" fill="none" stroke="#2B2633" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="41" cy="49" r="7" fill="none" stroke="#2B2633" stroke-width="2"/>
+  <circle cx="59" cy="49" r="7" fill="none" stroke="#2B2633" stroke-width="2"/>
+  <rect x="48" y="48" width="4" height="2" rx="1" fill="#2B2633"/>
+  </g>
+</svg>
