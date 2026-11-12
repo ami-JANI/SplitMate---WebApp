@@ -4,7 +4,8 @@ rules_version = '2';
 // Deploy with `firebase deploy --only firestore:rules`. Tested in tests/firestore.rules.test.ts.
 //
 // Changes from the iOS app's rules (docs/HANDOFF.md §8 "gaps worth fixing"):
-// - Emails are never stored in Firestore (they stay in Firebase Auth), so profiles are safe to search.
+// - Profiles hold no email, so they are safe to search. The only stored email is the
+//   username sign-in entry, which needs the username and the password to find.
 // - Members can only change the hangout fields the app needs, and only in the allowed direction.
 //   They can add people to an open hangout, but never remove or rename anyone else.
 // - Bills can only be created in the same write that settles their day (or ends the hangout),
@@ -100,6 +101,22 @@ service cloud.firestore {
       allow write: if isSelf(uid)
         && request.resource.data.keys().hasOnly(['visible', 'totalSpentCents', 'hangoutCount', 'busiestWeekday', 'busiestMonth', 'updatedAt'])
         && request.resource.data.visible is bool;
+    }
+
+    // ------------------------------------------------------------ Username sign-in
+    // The email for signing in with a username, filed under a key derived from the
+    // username and the password (src/lib/loginKey.ts). It can be fetched only by
+    // someone who can compute that key; the collection can never be listed.
+    match /logins/{key} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if signedIn()
+        && key.matches('^[0-9a-f]{64}$')
+        && request.resource.data.keys().hasOnly(['uid', 'email'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && (resource == null || resource.data.uid == request.auth.uid);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     // ------------------------------------------------------------ Join tokens

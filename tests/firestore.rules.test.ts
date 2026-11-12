@@ -1,6 +1,6 @@
 // Security-rule tests against the Firestore emulator. Run: npm run test:rules
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { arrayUnion, deleteDoc, doc, getDoc, increment, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
+import { arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, increment, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch, type Firestore } from 'firebase/firestore';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
@@ -80,6 +80,29 @@ describe('profiles', () => {
     await seed('publicStats/alice', { visible: false, totalSpentCents: 100, hangoutCount: 1 });
     await assertFails(getDoc(doc(as('bob'), 'publicStats/alice')));
     await assertSucceeds(getDoc(doc(as('alice'), 'publicStats/alice')));
+  });
+});
+
+describe('username sign-in', () => {
+  const key = 'a'.repeat(64);
+  const withEmail = (uid: string, email: string) => env.authenticatedContext(uid, { email }).firestore() as unknown as Firestore;
+
+  it('files only your own email, under a well-formed key', async () => {
+    const db = withEmail('alice', 'alice@example.com');
+    await assertSucceeds(setDoc(doc(db, `logins/${key}`), { uid: 'alice', email: 'alice@example.com' }));
+    await assertFails(setDoc(doc(db, `logins/${'b'.repeat(64)}`), { uid: 'alice', email: 'someone@else.com' }));
+    await assertFails(setDoc(doc(db, `logins/${'c'.repeat(64)}`), { uid: 'bob', email: 'alice@example.com' }));
+    await assertFails(setDoc(doc(db, 'logins/alice'), { uid: 'alice', email: 'alice@example.com' }));
+    // Nobody else can overwrite or remove it.
+    await assertFails(setDoc(doc(withEmail('mallory', 'm@example.com'), `logins/${key}`), { uid: 'mallory', email: 'm@example.com' }));
+    await assertFails(deleteDoc(doc(withEmail('mallory', 'm@example.com'), `logins/${key}`)));
+  });
+
+  it('can be fetched by exact key before sign-in, but never listed', async () => {
+    await seed(`logins/${key}`, { uid: 'alice', email: 'alice@example.com' });
+    await assertSucceeds(getDoc(doc(anon(), `logins/${key}`)));
+    await assertFails(getDocs(collection(anon(), 'logins')));
+    await assertFails(getDocs(collection(as('bob'), 'logins')));
   });
 });
 

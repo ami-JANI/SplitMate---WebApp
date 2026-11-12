@@ -48,7 +48,7 @@ export function SignIn() {
       <motion.div {...rise(0)}><Hero /></motion.div>
       <motion.form className="stack gap-14" onSubmit={submit} noValidate {...rise(0.05)}>
         <TwoToneTitle as="h2" light="Welcome" bold="back" size="var(--t-title)" />
-        <PillField icon={<Mail size={20} />} type="email" placeholder="Email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <PillField icon={<User size={20} />} type="text" placeholder="Email or username" aria-label="Email or username" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} />
         <PillField icon={<Lock size={20} />} type="password" placeholder="Password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <ErrorBanner message={error} />
         {info && <div className="info-banner" role="status">{info}</div>}

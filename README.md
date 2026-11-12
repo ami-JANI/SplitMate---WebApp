@@ -80,7 +80,8 @@ The handoff (§11) suggested these improvements, and the web build includes them
 - Money is stored as whole paisa (`amountCents`, `totalSpentCents`), so totals never drift.
 - Each hangout stores its creator's time zone, and every member works out the day in that zone.
 - Join tokens are checked for collisions and retried.
-- Emails are never stored in Firestore. They stay in Firebase Auth, so searching profiles doesn't expose them.
+- Profiles hold no email, so searching them doesn't expose anyone's address.
+- You can sign in with your username or your email. The email for a username is filed under a key made from the username and the password (`src/lib/loginKey.ts`), so only someone who knows both can find it. After a password reset, sign in with your email once to make the username work again.
 - Tighter security rules:
   - members can only change the fields the app needs
   - only the creator can end a hangout

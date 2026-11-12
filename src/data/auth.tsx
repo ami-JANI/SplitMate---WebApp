@@ -6,21 +6,23 @@ import {
   signOut as fbSignOut,
   type User,
 } from 'firebase/auth';
-import { getDoc, onSnapshot, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { getDoc, onSnapshot, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { auth, db } from '../firebase';
 import type { AppUser } from '../lib/types';
-import { cleanUsername, signInProblem, signUpProblem } from '../lib/validator';
+import { loginKey } from '../lib/loginKey';
+import { cleanUsername, identifierProblem, signUpProblem } from '../lib/validator';
 import { toUser } from './convert';
 import { friendlyError } from './errors';
-import { publicStatsDoc, userDoc, usernameDoc } from './paths';
+import { loginDoc, publicStatsDoc, userDoc, usernameDoc } from './paths';
 
 interface AuthState {
   /** undefined while Firebase is still restoring the session. */
   user: User | null | undefined;
   /** undefined while loading, null when the account has no profile yet. */
   profile: AppUser | null | undefined;
-  signIn(email: string, password: string): Promise<string | null>;
+  /** `identifier` is an email or a username. */
+  signIn(identifier: string, password: string): Promise<string | null>;
   signUp(input: { name: string; username: string; email: string; password: string; avatar?: string }): Promise<string | null>;
   completeProfile(input: { name: string; username: string; avatar?: string }): Promise<string | null>;
   resetPassword(email: string): Promise<string | null>;
@@ -58,6 +60,21 @@ async function writeProfile(uid: string, name: string, handle: string, avatar?: 
   await batch.commit();
 }
 
+/**
+ * Files the signed-in user's email under a key made from their username and password,
+ * so they can sign in with the username next time (see lib/loginKey.ts). Best effort.
+ */
+async function rememberLogin(user: User, handle: string, password: string) {
+  if (!user.email || !handle) return;
+  try {
+    await setDoc(loginDoc(await loginKey(handle, password)), { uid: user.uid, email: user.email });
+  } catch {
+    /* username sign-in just stays unavailable until the next email sign-in */
+  }
+}
+
+const WRONG_USERNAME = 'Wrong username or password. If this keeps failing, sign in with your email once.';
+
 async function usernameTaken(handle: string) {
   return (await getDoc(usernameDoc(handle))).exists();
 }
@@ -85,11 +102,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       profile,
-      async signIn(email, password) {
-        const problem = signInProblem(email, password);
+      async signIn(identifier, password) {
+        const problem = identifierProblem(identifier, password);
         if (problem) return problem;
+        const id = identifier.trim();
         try {
-          await signInWithEmailAndPassword(auth, email.trim(), password);
+          if (id.includes('@') && !id.startsWith('@')) {
+            // Email: sign in, then make username sign-in work for next time.
+            const cred = await signInWithEmailAndPassword(auth, id, password);
+            void getDoc(userDoc(cred.user.uid))
+              .then((snap) => rememberLogin(cred.user, snap.data()?.username ?? '', password))
+              .catch(() => undefined);
+            return null;
+          }
+          // Username: find the email filed under username + password.
+          const snap = await getDoc(loginDoc(await loginKey(cleanUsername(id), password)));
+          const email = snap.data()?.email;
+          if (typeof email !== 'string') return WRONG_USERNAME;
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+          } catch (e) {
+            // The password was changed since; the old entry no longer opens the account.
+            return friendlyError(e) === 'Wrong email or password' ? WRONG_USERNAME : friendlyError(e);
+          }
           return null;
         } catch (e) {
           return friendlyError(e);
@@ -104,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
           try {
             await writeProfile(cred.user.uid, name, handle, avatar);
+            void rememberLogin(cred.user, handle, password);
           } catch {
             // Someone took the username in the meantime. Remove the half-made account.
             await cred.user.delete().catch(() => undefined);
@@ -129,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async resetPassword(email) {
         if (!email.trim()) return 'Type your email first';
-        if (!email.includes('@')) return "That email doesn't look right";
+        if (!email.includes('@') || email.trim().startsWith('@')) return 'Type your email (not your username) to reset your password';
         try {
           await sendPasswordResetEmail(auth, email.trim());
           return null;

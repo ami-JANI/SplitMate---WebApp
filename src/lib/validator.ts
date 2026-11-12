@@ -11,6 +11,18 @@ export function signInProblem(email: string, password: string): string | null {
   return null;
 }
 
+/** Sign-in accepts an email or a username. */
+export function identifierProblem(identifier: string, password: string): string | null {
+  const id = identifier.trim();
+  if (!id) return 'Email or username is missing';
+  if (!id.includes('@') || id.startsWith('@')) {
+    const u = usernameProblem(cleanUsername(id));
+    if (u) return "That username doesn't look right";
+  }
+  if (!password) return 'Password is missing';
+  return null;
+}
+
 export function usernameProblem(username: string): string | null {
   if (!username) return 'Username is missing';
   if (username.length < 3 || username.length > 20) return 'Username must be 3-20 characters';
